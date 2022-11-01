@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {
   Count,
   CountSchema,
@@ -26,6 +27,7 @@ export class EmpresaController {
     public empresaRepository : EmpresaRepository,
   ) {}
 
+  @authenticate('admin')
   @post('/empresas')
   @response(200, {
     description: 'Empresa model instance',

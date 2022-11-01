@@ -1,30 +1,63 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
-import {Cliente} from '../models';
+import {RequestInfo, RequestInit} from 'node-fetch';
+import {Llaves} from '../config/llaves';
+import {Cliente, Credenciales} from '../models';
 import {ClienteRepository} from '../repositories';
+import {AutenticacionService} from '../services';
+const fetch = (url: RequestInfo, init?: RequestInit) =>
+  import('node-fetch').then(({ default: fetch }) => fetch(url, init));
 
 export class ClienteController {
   constructor(
     @repository(ClienteRepository)
     public clienteRepository : ClienteRepository,
+    @service(AutenticacionService)
+    public servicioAutenticacion: AutenticacionService,
+    //@service(Notificaciones)
+    //public notificaciones: NotificacionService,
   ) {}
+
+  @post("/identificarCliente", {
+    responses:{
+      '200': {
+        description: "Identificacion de clientes"
+      }
+    }
+  })
+  async identificarCliente(
+    @requestBody() credenciales : Credenciales
+  ){
+  let p = await this.servicioAutenticacion.IdentificarCliente(credenciales.usuario,credenciales.clave);
+  if(p){
+    let token = this.servicioAutenticacion.GenerarTokenJWT(p);
+    return{
+      datos: {
+        nombre: p.nombres,
+        correo: p.email,
+        id: p.id
+      },
+      tk: token
+    }
+    
+  }else{
+    throw new HttpErrors[401]("Datos invalidos");
+  }
+
+  }
+
 
   @post('/clientes')
   @response(200, {
@@ -44,7 +77,24 @@ export class ClienteController {
     })
     cliente: Omit<Cliente, 'id'>,
   ): Promise<Cliente> {
+
+    let clave = this.servicioAutenticacion.GenerarClave();
+    let claveCifrada = this.servicioAutenticacion.CifrarClave(clave);
+    cliente.clave = claveCifrada;
+    //let p = await this.clienteRepository.create(cliente);
+    console.log("La clave generada es: " + clave);
+    console.log("La clave cifrada es: " + claveCifrada);
+
+
+    //Notificación al cliente
+    let destino = cliente.celular;
+    let contenido = `Hola ${cliente.nombres}, su nombre de usuario es: ${cliente.email} y su contraseña es: ${clave}`;
+    fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${destino}`)
+      .then((data:any) => {
+        console.log(data);
+      })
     return this.clienteRepository.create(cliente);
+
   }
 
   @get('/clientes/count')
