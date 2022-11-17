@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {service} from '@loopback/core';
 import {
   Count,
@@ -20,6 +21,7 @@ import {AutenticacionService} from '../services';
 const fetch = (url: RequestInfo, init?: RequestInit) =>
   import('node-fetch').then(({ default: fetch }) => fetch(url, init));
 
+//@authenticate('admin')
 export class ClienteController {
   constructor(
     @repository(ClienteRepository)
@@ -30,6 +32,7 @@ export class ClienteController {
     //public notificaciones: NotificacionService,
   ) {}
 
+  //@authenticate.skip()
   @post("/identificarCliente", {
     responses:{
       '200': {
@@ -45,20 +48,20 @@ export class ClienteController {
     let token = this.servicioAutenticacion.GenerarTokenJWT(p);
     return{
       datos: {
-        nombre: p.nombres,
-        correo: p.email,
+        usuario: p.email,
+        clave: p.clave,
         id: p.id
       },
       tk: token
     }
-    
+
   }else{
     throw new HttpErrors[401]("Datos invalidos");
   }
 
   }
 
-
+  //@authenticate.skip()
   @post('/clientes')
   @response(200, {
     description: 'Cliente model instance',
@@ -97,6 +100,7 @@ export class ClienteController {
 
   }
 
+  //@authenticate.skip()
   @get('/clientes/count')
   @response(200, {
     description: 'Cliente model count',
@@ -144,7 +148,7 @@ export class ClienteController {
   ): Promise<Count> {
     return this.clienteRepository.updateAll(cliente, where);
   }
-
+  //@authenticate.skip()
   @get('/clientes/{id}')
   @response(200, {
     description: 'Cliente model instance',

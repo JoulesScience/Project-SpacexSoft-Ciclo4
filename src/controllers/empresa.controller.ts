@@ -5,29 +5,24 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
 import {Empresa} from '../models';
 import {EmpresaRepository} from '../repositories';
 
+@authenticate('admin')
 export class EmpresaController {
   constructor(
     @repository(EmpresaRepository)
     public empresaRepository : EmpresaRepository,
   ) {}
 
-  @authenticate('admin')
+
   @post('/empresas')
   @response(200, {
     description: 'Empresa model instance',
@@ -49,6 +44,7 @@ export class EmpresaController {
     return this.empresaRepository.create(empresa);
   }
 
+  @authenticate.skip()
   @get('/empresas/count')
   @response(200, {
     description: 'Empresa model count',
